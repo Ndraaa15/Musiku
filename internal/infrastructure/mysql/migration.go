@@ -1,14 +1,13 @@
-package postgresql
+package mysql
 
 import (
 	"log"
 
 	e "github.com/Ndraaa15/musiku/global/errors"
 	"github.com/Ndraaa15/musiku/internal/domain/entity"
-	"gorm.io/gorm"
 )
 
-func Migration(db *gorm.DB) error {
+func Migration(db *DB) error {
 	if err := db.AutoMigrate(
 		&entity.User{},
 		&entity.Instrument{},

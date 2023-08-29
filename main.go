@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	if err := godotenv.Load("../.env"); err != nil {
+	if err := godotenv.Load(); err != nil {
 		log.Printf("[musiku-main] failed to load .env file. Error : %v\n", err)
 		return
 	}

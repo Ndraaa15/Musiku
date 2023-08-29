@@ -1,15 +1,15 @@
 package repository
 
 import (
-	"github.com/Ndraaa15/musiku/internal/infrastructure/postgresql"
+	"github.com/Ndraaa15/musiku/internal/infrastructure/mysql"
 )
 
 type UserRepository struct {
-	db *postgresql.DB
+	db *mysql.DB
 }
 
 type UserRepositoryImpl interface{}
 
-func NewUserRepository(db *postgresql.DB) UserRepositoryImpl {
+func NewUserRepository(db *mysql.DB) UserRepositoryImpl {
 	return &UserRepository{db}
 }
