@@ -1,14 +1,14 @@
 package service
 
-import "github.com/Ndraaa15/musiku/internal/domain/repository"
+import (
+	"context"
 
-type UserService struct {
-	ur *repository.UserRepositoryImpl
-}
+	"github.com/Ndraaa15/musiku/internal/domain/entity"
+	"github.com/gofrs/uuid"
+)
 
 type UserServiceImpl interface {
-}
-
-func NewUserService(ur repository.UserRepositoryImpl) UserServiceImpl {
-	return &UserService{}
+	Register(req *entity.UserRegister, ctx context.Context) (*entity.User, error)
+	VerifyAccount(id uuid.UUID, ctx context.Context) (*entity.User, error)
+	Login(req *entity.UserLogin, ctx context.Context) (*entity.User, error)
 }

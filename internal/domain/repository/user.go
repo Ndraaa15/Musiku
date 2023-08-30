@@ -1,15 +1,11 @@
 package repository
 
 import (
-	"github.com/Ndraaa15/musiku/internal/infrastructure/mysql"
+	"context"
+
+	"github.com/Ndraaa15/musiku/internal/domain/entity"
 )
 
-type UserRepository struct {
-	db *mysql.DB
-}
-
-type UserRepositoryImpl interface{}
-
-func NewUserRepository(db *mysql.DB) UserRepositoryImpl {
-	return &UserRepository{db}
+type UserRepositoryImpl interface {
+	Create(user *entity.User, ctx context.Context) (*entity.User, error)
 }

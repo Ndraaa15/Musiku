@@ -7,10 +7,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/Ndraaa15/musiku/internal/api/controller"
-	"github.com/Ndraaa15/musiku/internal/domain/repository"
-	"github.com/Ndraaa15/musiku/internal/domain/service"
+	"github.com/Ndraaa15/musiku/internal/api/handler"
+	"github.com/Ndraaa15/musiku/internal/application/repository"
+	"github.com/Ndraaa15/musiku/internal/application/service"
 	"github.com/Ndraaa15/musiku/internal/infrastructure/mysql"
+	"github.com/Ndraaa15/musiku/internal/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,9 +22,9 @@ const (
 )
 
 type server struct {
-	router *gin.Engine
-	server *http.Server
-	ctrl   *controller.Controller
+	router  *gin.Engine
+	server  *http.Server
+	handler *handler.Handler
 }
 
 func New() (*server, error) {
@@ -41,13 +42,17 @@ func New() (*server, error) {
 	}
 	log.Printf("[musiku-server] succes to initialize musiku database. Database connected\n")
 
-	ur := repository.NewUserRepository(db)
-	us := service.NewUserService(ur)
+	userRepository := repository.NewUserRepository(db)
+	userService := service.NewUserService(userRepository)
+
+	s.handler = handler.NewHandler(userService)
 
 	s.router = gin.Default()
-	s.ctrl = controller.NewController(us)
 
-	mysql.Migration(db)
+	if err := mysql.Migration(db); err != nil {
+		log.Printf("[musiku-server] failed to migrate musiku database : %v\n", err)
+		return nil, err
+	}
 
 	return s, nil
 }
@@ -61,13 +66,21 @@ func Run() int {
 
 	s.Start()
 	s.router.Run(fmt.Sprintf(":%s", os.Getenv("CONFIG_SERVER_PORT")))
-	log.Printf("[musiku-server] Server is running at %s:%s", os.Getenv("CONFIG_SERVER_HOST"), os.Getenv("CONFIG_SERVER_PORT"))
 	return CodeSuccess
 }
 
 func (s *server) Start() {
+	log.Printf("[musiku-server] Server is running at %s:%s", os.Getenv("CONFIG_SERVER_HOST"), os.Getenv("CONFIG_SERVER_PORT"))
 	log.Println("[musiku-server] starting server...")
+
 	s.router.GET("/health", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{"message": "hi, i'm musiku server"})
 	})
+
+	route := s.router.Group("/api/v1")
+
+	route.POST("/register", s.handler.Register)
+	route.POST("/login", s.handler.Login)
+
+	route.Use(middleware.ValidateJWTToken())
 }

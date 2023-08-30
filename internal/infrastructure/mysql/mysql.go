@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/Ndraaa15/musiku/cmd/config"
-	e "github.com/Ndraaa15/musiku/global/errors"
+	"github.com/Ndraaa15/musiku/global/errors"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -20,7 +20,7 @@ func NewMySqlClient() (*DB, error) {
 	})
 	if err != nil {
 		log.Fatalf("[musiku-mysql] failed to connecting with musiku database : %v\n", err)
-		return nil, e.ErrConnectDatabase
+		return nil, errors.ErrConnectDatabase
 	}
 	return &DB{db}, nil
 }
