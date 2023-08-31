@@ -2,9 +2,11 @@ package service
 
 import (
 	"context"
+	"os"
 
 	"github.com/Ndraaa15/musiku/global/email"
 	"github.com/Ndraaa15/musiku/global/errors"
+	"github.com/Ndraaa15/musiku/global/jwt"
 	"github.com/Ndraaa15/musiku/global/password"
 	"github.com/Ndraaa15/musiku/global/validator"
 	"github.com/Ndraaa15/musiku/internal/domain/entity"
@@ -52,7 +54,8 @@ func (us *UserService) Register(req *entity.UserRegister, ctx context.Context) (
 	mailer := email.NewMailClient()
 	mailer.SetSubject("Email Verification")
 	mailer.SetReciever(req.Email)
-	mailer.SetBodyHTML(req.Username, "http://localhost:8080/verify/"+uuid.String())
+	mailer.SetSender(os.Getenv("CONFIG_SENDER_NAME"))
+	mailer.SetBodyHTML(req.Username, os.Getenv("URL_VERIFY")+uuid.String())
 	if err = mailer.SendMail(); err != nil {
 		return nil, err
 	}
@@ -79,14 +82,47 @@ func validateRequestRegister(req *entity.UserRegister) error {
 	if req.Phone == "" || !validator.ValidatePhone(req.Phone) {
 		return errors.ErrInvalidPhoneNumber
 	}
-
 	return nil
 }
 
 func (us *UserService) VerifyAccount(id uuid.UUID, ctx context.Context) (*entity.User, error) {
-	return nil, nil
+	user, err := us.Repository.FindByID(id, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if user.Status {
+		return nil, errors.ErrAccountAlreadyVerified
+	}
+
+	user.Status = true
+	user, err = us.Repository.Update(user, ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }
 
-func (us *UserService) Login(req *entity.UserLogin, ctx context.Context) (*entity.User, error) {
-	return nil, nil
+func (us *UserService) Login(req *entity.UserLogin, ctx context.Context) (*entity.ResponseLogin, error) {
+	var res *entity.ResponseLogin
+
+	user, err := us.Repository.FindByEmail(req.Email, ctx)
+	if err != nil {
+		return res, err
+	}
+
+	if !user.Status {
+		return res, errors.ErrAccountNotVerified
+	}
+
+	if err := password.ComparePassword(req.Password, user.Password); err != nil {
+		return res, errors.ErrInvalidPassword
+	}
+
+	jwt, err := jwt.EncodeToken(user)
+	res = &entity.ResponseLogin{
+		User:  user,
+		Token: jwt,
+	}
+	return res, err
 }

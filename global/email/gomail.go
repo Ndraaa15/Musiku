@@ -2,6 +2,7 @@ package email
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -19,7 +20,7 @@ type Gomail struct {
 func NewMailClient() *Gomail {
 	port, err := strconv.Atoi(os.Getenv("CONFIG_SMTP_PORT"))
 	if err != nil {
-		log.Fatalf("[tedxub2023-api-http] failed to convert smtp port: %s\n", err.Error())
+		log.Fatalf("[musiku-gomail] failed to convert smtp port: %s\n", err.Error())
 	}
 
 	return &Gomail{
@@ -46,7 +47,8 @@ func (g *Gomail) SetSubject(subject string) {
 
 func (g *Gomail) SetBodyHTML(username, verificationLink string) error {
 	var body bytes.Buffer
-	path := "musiku/global/email/template.html"
+	path := "C:/Users/indra/Documents/Lomba/APPS DEVELOPMENT - IITC 2023/musiku/global/email/template.html"
+	fmt.Println(os.Stat(path))
 	t, err := template.ParseFiles(path)
 	if err != nil {
 		return errors.ErrParsingHTML

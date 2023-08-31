@@ -5,7 +5,7 @@ import "github.com/gin-gonic/gin"
 type response struct {
 	Status  status      `json:"status"`
 	Message string      `json:"message"`
-	Error   error       `json:"error"`
+	Error   string      `json:"error"`
 	Data    interface{} `json:"data"`
 }
 
@@ -21,7 +21,7 @@ func Success(ctx *gin.Context, code int, message string, data interface{}) {
 			IsSuccess: true,
 		},
 		Message: message,
-		Error:   nil,
+		Error:   "-",
 		Data:    data,
 	})
 }
@@ -33,7 +33,7 @@ func Error(ctx *gin.Context, code int, err error, message string, data interface
 			IsSuccess: false,
 		},
 		Message: message,
-		Error:   err,
+		Error:   err.Error(),
 		Data:    data,
 	})
 }

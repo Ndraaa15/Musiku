@@ -81,6 +81,7 @@ func (s *server) Start() {
 
 	route.POST("/register", s.handler.Register)
 	route.POST("/login", s.handler.Login)
+	route.GET("/verify/:id", s.handler.VerifyAccount)
 
 	route.Use(middleware.ValidateJWTToken())
 }

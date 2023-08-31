@@ -23,3 +23,10 @@ func HashPassword(password string) (string, error) {
 
 	return string(hashedPassword), nil
 }
+
+func ComparePassword(passwordReq, passwordDB string) error {
+	if err := bcrypt.CompareHashAndPassword([]byte(passwordDB), []byte(passwordReq)); err != nil {
+		return errors.ErrInvalidPassword
+	}
+	return nil
+}

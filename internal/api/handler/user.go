@@ -2,11 +2,12 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/Ndraaa15/musiku/global/errors"
-	e "github.com/Ndraaa15/musiku/global/errors"
+
 	"github.com/Ndraaa15/musiku/global/response"
 	"github.com/Ndraaa15/musiku/internal/domain/entity"
 	"github.com/gin-gonic/gin"
@@ -29,15 +30,13 @@ func (h *Handler) Register(ctx *gin.Context) {
 			response.Error(ctx, code, err, message, data)
 			return
 		}
-
 		response.Success(ctx, code, message, data)
 	}()
 
 	req := entity.UserRegister{}
 
 	if err = ctx.ShouldBindJSON(&req); err != nil {
-		err = errors.ErrInvalidRequest
-		message = "Invalid request body"
+		message = errors.ErrInvalidRequest.Error()
 		code = http.StatusBadRequest
 		return
 	}
@@ -45,17 +44,15 @@ func (h *Handler) Register(ctx *gin.Context) {
 	user, err := h.User.Register(&req, c)
 
 	if err != nil {
-		err = errors.ErrInternalServer
-		message = "Failed to register user"
+		message = errors.ErrInternalServer.Error()
 		code = http.StatusInternalServerError
 		return
 	}
 
 	select {
 	case <-c.Done():
-		err = e.ErrRequestTimeout
 		code = http.StatusRequestTimeout
-		message = "Request timeout"
+		message = errors.ErrRequestTimeout.Error()
 	default:
 		message = "Success to register user and please verify your email"
 		data = user
@@ -63,8 +60,8 @@ func (h *Handler) Register(ctx *gin.Context) {
 }
 
 func (h *Handler) VerifyAccount(ctx *gin.Context) {
-	id := ctx.Param("id")
-
+	param := ctx.Param("id")
+	fmt.Println(param)
 	c, cancel := context.WithTimeout(ctx.Request.Context(), 6000*time.Millisecond)
 	defer cancel()
 
@@ -80,26 +77,32 @@ func (h *Handler) VerifyAccount(ctx *gin.Context) {
 			response.Error(ctx, code, err, message, data)
 			return
 		}
-		http.Redirect(ctx.Writer, ctx.Request, "http://localhost:3000/login", http.StatusFound)
+		response.Success(ctx, code, message, data)
 	}()
 
-	uuid, err := uuid.FromString(id)
+	uuid, err := uuid.FromString(param)
 	if err != nil {
-		err = errors.ErrInvalidRequest
-		message = "Invalid request body"
+		message = errors.ErrInvalidRequest.Error()
 		code = http.StatusBadRequest
 		return
 	}
 
-	_, err = h.User.VerifyAccount(uuid, c)
+	user, err := h.User.VerifyAccount(uuid, c)
+
+	if err != nil {
+		message = errors.ErrInternalServer.Error()
+		code = http.StatusInternalServerError
+		return
+	}
 
 	select {
 	case <-c.Done():
-		err = errors.ErrRequestTimeout
 		code = http.StatusRequestTimeout
-		message = "Request timeout"
+		message = errors.ErrRequestTimeout.Error()
+	default:
+		message = "Your account has been verified, please login"
+		data = user
 	}
-
 }
 
 func (h *Handler) Login(ctx *gin.Context) {
@@ -118,16 +121,29 @@ func (h *Handler) Login(ctx *gin.Context) {
 			response.Error(ctx, code, err, message, data)
 			return
 		}
-
 		response.Success(ctx, code, message, data)
 	}()
 
-	select {
-	case <-c.Done():
-		err = e.ErrRequestTimeout
-		code = http.StatusRequestTimeout
-	default:
-
+	req := entity.UserLogin{}
+	if err = ctx.ShouldBindJSON(&req); err != nil {
+		message = errors.ErrInvalidRequest.Error()
+		code = http.StatusBadRequest
+		return
 	}
 
+	res, err := h.User.Login(&req, c)
+	if err != nil {
+		code = http.StatusBadRequest
+		message = errors.ErrBadRequest.Error()
+		return
+	}
+
+	select {
+	case <-c.Done():
+		message = errors.ErrRequestTimeout.Error()
+		code = http.StatusRequestTimeout
+	default:
+		message = "Success to login"
+		data = res
+	}
 }

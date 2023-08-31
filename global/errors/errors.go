@@ -40,4 +40,10 @@ var (
 	ErrPhoneNumberRequired = errors.New("PHONE_NUMBER_REQUIRED")
 
 	ErrUsernameRequired = errors.New("USERNAME_REQUIRED")
+
+	ErrAccountNotVerified = errors.New("ACCOUNT_NOT_VERIFIED")
+
+	ErrBadRequest = errors.New("BAD_REQUEST")
+
+	ErrAccountAlreadyVerified = errors.New("ACCOUNT_ALREADY_VERIFIED")
 )
