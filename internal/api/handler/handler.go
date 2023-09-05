@@ -5,11 +5,17 @@ import (
 )
 
 type Handler struct {
-	User service.UserServiceImpl
+	User       service.UserServiceImpl
+	Venue      service.VenueServiceImpl
+	Instrument service.InstrumentServiceImpl
+	Studio     service.StudioServiceImpl
 }
 
-func NewHandler(user service.UserServiceImpl) *Handler {
+func NewHandler(user service.UserServiceImpl, venue service.VenueServiceImpl, instrument service.InstrumentServiceImpl, studio service.StudioServiceImpl) *Handler {
 	return &Handler{
-		User: user,
+		User:       user,
+		Venue:      venue,
+		Instrument: instrument,
+		Studio:     studio,
 	}
 }

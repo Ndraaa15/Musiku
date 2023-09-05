@@ -10,6 +10,7 @@ import (
 	"github.com/Ndraaa15/musiku/internal/api/handler"
 	"github.com/Ndraaa15/musiku/internal/application/repository"
 	"github.com/Ndraaa15/musiku/internal/application/service"
+	"github.com/Ndraaa15/musiku/internal/domain/entity"
 	"github.com/Ndraaa15/musiku/internal/infrastructure/mysql"
 	"github.com/Ndraaa15/musiku/internal/middleware"
 	"github.com/gin-gonic/gin"
@@ -42,17 +43,41 @@ func New() (*server, error) {
 	}
 	log.Printf("[musiku-server] succes to initialize musiku database. Database connected\n")
 
-	userRepository := repository.NewUserRepository(db)
-	userService := service.NewUserService(userRepository)
-
-	s.handler = handler.NewHandler(userService)
-
-	s.router = gin.Default()
-
 	if err := mysql.Migration(db); err != nil {
 		log.Printf("[musiku-server] failed to migrate musiku database : %v\n", err)
 		return nil, err
 	}
+
+	userRepository := repository.NewUserRepository(db)
+	userService := service.NewUserService(userRepository)
+
+	venueRepository := repository.NewVenueRepository(db)
+	venueService := service.NewVenueService(venueRepository)
+
+	{
+		var totalInstrument int64
+		if err := db.Model(&entity.Instrument{}).Count(&totalInstrument).Error; err != nil {
+			log.Printf("[musiku-server] failed to count total instrument : %v\n", err)
+			return nil, err
+		}
+
+		if totalInstrument == 0 {
+			if err := repository.SeedInstrument(db); err != nil {
+				log.Printf("[musiku-server] failed to seed instrument : %v\n", err)
+				return nil, err
+			}
+		}
+	}
+
+	instrumentRepository := repository.NewInstrumentRepository(db)
+	instrumentService := service.NewInstrumentService(instrumentRepository)
+
+	studioRepository := repository.NewStudioRepository(db)
+	studioService := service.NewStudioService(studioRepository)
+
+	s.handler = handler.NewHandler(userService, venueService, instrumentService, studioService)
+
+	s.router = gin.Default()
 
 	return s, nil
 }
@@ -82,6 +107,13 @@ func (s *server) Start() {
 	route.POST("/register", s.handler.Register)
 	route.POST("/login", s.handler.Login)
 	route.GET("/verify/:id", s.handler.VerifyAccount)
+
+	route.GET("/venue", s.handler.GetAllVenue)
+	route.PATCH("/venue", s.handler.RentVenue)
+
+	route.GET("/instruments", s.handler.GetAllInstrument)
+	route.GET("/instruments/:id", s.handler.GetInstrumentByID)
+	route.PATCH("/instrument", s.handler.RentInstrument)
 
 	route.Use(middleware.ValidateJWTToken())
 }

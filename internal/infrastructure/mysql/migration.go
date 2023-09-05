@@ -17,6 +17,5 @@ func Migration(db *DB) error {
 		log.Fatalf("[musiku-postgresql] failed to migrate musiku database : %v\n", err)
 		return errors.ErrMigrateDatabase
 	}
-
 	return nil
 }

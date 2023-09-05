@@ -2,19 +2,16 @@ package handler
 
 import (
 	"context"
-	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/Ndraaa15/musiku/global/errors"
-
 	"github.com/Ndraaa15/musiku/global/response"
-	"github.com/Ndraaa15/musiku/internal/domain/entity"
 	"github.com/gin-gonic/gin"
-	"github.com/gofrs/uuid"
 )
 
-func (h *Handler) Register(ctx *gin.Context) {
+func (h *Handler) GetAllInstrument(ctx *gin.Context) {
 	c, cancel := context.WithTimeout(ctx.Request.Context(), 15*time.Second)
 	defer cancel()
 
@@ -33,16 +30,7 @@ func (h *Handler) Register(ctx *gin.Context) {
 		response.Success(ctx, code, message, data)
 	}()
 
-	req := entity.UserRegister{}
-
-	if err = ctx.ShouldBindJSON(&req); err != nil {
-		message = errors.ErrInvalidRequest.Error()
-		code = http.StatusBadRequest
-		return
-	}
-
-	user, err := h.User.Register(&req, c)
-
+	instruments, err := h.Instrument.GetAllInstrument(c)
 	if err != nil {
 		message = errors.ErrInternalServer.Error()
 		code = http.StatusInternalServerError
@@ -55,15 +43,12 @@ func (h *Handler) Register(ctx *gin.Context) {
 		message = errors.ErrRequestTimeout.Error()
 		return
 	default:
-		message = "Success to register user and please verify your email"
-		data = user
-		return
+		message = "Success to get all instrument"
+		data = instruments
 	}
 }
 
-func (h *Handler) VerifyAccount(ctx *gin.Context) {
-	param := ctx.Param("id")
-	fmt.Println(param)
+func (h *Handler) GetInstrumentByID(ctx *gin.Context) {
 	c, cancel := context.WithTimeout(ctx.Request.Context(), 15*time.Second)
 	defer cancel()
 
@@ -82,15 +67,15 @@ func (h *Handler) VerifyAccount(ctx *gin.Context) {
 		response.Success(ctx, code, message, data)
 	}()
 
-	uuid, err := uuid.FromString(param)
+	idParam := ctx.Param("id")
+	id, err := strconv.Atoi(idParam)
 	if err != nil {
 		message = errors.ErrInvalidRequest.Error()
 		code = http.StatusBadRequest
 		return
 	}
 
-	user, err := h.User.VerifyAccount(uuid, c)
-
+	res, err := h.Instrument.GetByID(c, uint(id))
 	if err != nil {
 		message = errors.ErrInternalServer.Error()
 		code = http.StatusInternalServerError
@@ -103,61 +88,39 @@ func (h *Handler) VerifyAccount(ctx *gin.Context) {
 		message = errors.ErrRequestTimeout.Error()
 		return
 	default:
-		message = "Your account has been verified, please login"
-		data = user
-		return
-	}
-}
-
-func (h *Handler) Login(ctx *gin.Context) {
-	c, cancel := context.WithTimeout(ctx.Request.Context(), 15*time.Second)
-	defer cancel()
-
-	var (
-		err     error
-		message string
-		code    = http.StatusOK
-		data    interface{}
-	)
-
-	defer func() {
-		if err != nil {
-			response.Error(ctx, code, err, message, data)
-			return
-		}
-		response.Success(ctx, code, message, data)
-	}()
-
-	req := entity.UserLogin{}
-	if err = ctx.ShouldBindJSON(&req); err != nil {
-		message = errors.ErrInvalidRequest.Error()
-		code = http.StatusBadRequest
-		return
-	}
-
-	res, err := h.User.Login(&req, c)
-	if err != nil {
-		code = http.StatusBadRequest
-		message = errors.ErrBadRequest.Error()
-		return
-	}
-
-	select {
-	case <-c.Done():
-		message = errors.ErrRequestTimeout.Error()
-		code = http.StatusRequestTimeout
-		return
-	default:
-		message = "Success to login"
+		message = "Success to get instrument by id"
 		data = res
 		return
 	}
 }
 
-func (h *Handler) UpdateUser(ctx *gin.Context) {
+func (h *Handler) RentInstrument(ctx *gin.Context) {
+	c, cancel := context.WithTimeout(ctx.Request.Context(), 15*time.Second)
+	defer cancel()
 
-}
+	var (
+		err     error
+		message string
+		code    = http.StatusOK
+		data    interface{}
+	)
 
-func (h *Handler) UploadPhotoProfile(ctx *gin.Context) {
+	defer func() {
+		if err != nil {
+			response.Error(ctx, code, err, message, data)
+			return
+		}
+		response.Success(ctx, code, message, data)
+	}()
 
+	select {
+	case <-c.Done():
+		code = http.StatusRequestTimeout
+		message = errors.ErrRequestTimeout.Error()
+		return
+	default:
+		message = "Success to get instrument by id"
+		data = nil
+		return
+	}
 }
