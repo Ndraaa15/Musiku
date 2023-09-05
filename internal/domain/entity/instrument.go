@@ -7,7 +7,7 @@ import (
 type Instrument struct {
 	ID            uint      `json:"id" gorm:"autoIncreament;primaryKey"`
 	Name          string    `json:"name"`
-	Rent          float64   `json:"rent"`
+	RentPrice     float64   `json:"rent_price"`
 	Address       string    `json:"address"`
 	Description   string    `json:"description"`
 	Spesification string    `json:"spesification"`
