@@ -51,6 +51,35 @@ func New() (*server, error) {
 	userRepository := repository.NewUserRepository(db)
 	userService := service.NewUserService(userRepository)
 
+	{
+		var totalDays int64
+		if err := db.Model(&entity.Day{}).Count(&totalDays).Error; err != nil {
+			log.Printf("[musiku-server] failed to count total days : %v\n", err)
+			return nil, err
+		}
+
+		if totalDays == 0 {
+			if err := repository.SeedDays(db); err != nil {
+				log.Printf("[musiku-server] failed to seed days : %v\n", err)
+				return nil, err
+			}
+		}
+	}
+
+	{
+		var totalVenue int64
+		if err := db.Model(&entity.Venue{}).Count(&totalVenue).Error; err != nil {
+			log.Printf("[musiku-server] failed to count total venue : %v\n", err)
+			return nil, err
+		}
+		if totalVenue == 0 {
+			if err := repository.SeedVenue(db); err != nil {
+				log.Printf("[musiku-server] failed to seed venue : %v\n", err)
+				return nil, err
+			}
+		}
+	}
+
 	venueRepository := repository.NewVenueRepository(db)
 	venueService := service.NewVenueService(venueRepository)
 
@@ -109,11 +138,15 @@ func (s *server) Start() {
 	route.GET("/verify/:id", s.handler.VerifyAccount)
 
 	route.GET("/venue", s.handler.GetAllVenue)
-	route.PATCH("/venue", s.handler.RentVenue)
+	route.GET("/venue/:id", s.handler.GetVenueByID)
+	route.PATCH("/venue/:id", s.handler.RentVenue)
 
 	route.GET("/instruments", s.handler.GetAllInstrument)
 	route.GET("/instruments/:id", s.handler.GetInstrumentByID)
-	route.PATCH("/instrument", s.handler.RentInstrument)
+	route.PATCH("/instruments/:id", s.handler.RentInstrument)
+	route.GET("/rent/instrument/province", s.handler.GetProvince)
+	route.GET("/rent/instrument/city", s.handler.GetCity)
+	route.GET("/rent/instrument/cost", s.handler.GetCost)
 
 	route.Use(middleware.ValidateJWTToken())
 }
