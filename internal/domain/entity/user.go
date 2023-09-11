@@ -36,3 +36,11 @@ type ResponseLogin struct {
 	User  *User  `json:"user"`
 	Token string `json:"token"`
 }
+
+type UserUpdate struct {
+	Name     string `json:"name"`
+	Username string `json:"username" gorm:"unique"`
+	Email    string `json:"email" gorm:"unique"`
+	Password string `db:"password" json:"-"`
+	Phone    string `json:"phone" gorm:"type:varchar(13)"`
+}

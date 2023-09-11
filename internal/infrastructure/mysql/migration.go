@@ -13,6 +13,8 @@ func Migration(db *DB) error {
 		&entity.Instrument{},
 		&entity.Studio{},
 		&entity.Venue{},
+		&entity.VenueDay{},
+		&entity.Day{},
 	); err != nil {
 		log.Fatalf("[musiku-postgresql] failed to migrate musiku database : %v\n", err)
 		return errors.ErrMigrateDatabase
