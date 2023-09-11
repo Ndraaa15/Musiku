@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -53,17 +52,14 @@ func (h *Handler) Register(ctx *gin.Context) {
 	case <-c.Done():
 		code = http.StatusRequestTimeout
 		message = errors.ErrRequestTimeout.Error()
-		return
 	default:
 		message = "Success to register user and please verify your email"
 		data = user
-		return
 	}
 }
 
 func (h *Handler) VerifyAccount(ctx *gin.Context) {
 	param := ctx.Param("id")
-	fmt.Println(param)
 	c, cancel := context.WithTimeout(ctx.Request.Context(), 15*time.Second)
 	defer cancel()
 
@@ -101,11 +97,9 @@ func (h *Handler) VerifyAccount(ctx *gin.Context) {
 	case <-c.Done():
 		code = http.StatusRequestTimeout
 		message = errors.ErrRequestTimeout.Error()
-		return
 	default:
 		message = "Your account has been verified, please login"
 		data = user
-		return
 	}
 }
 
@@ -139,7 +133,6 @@ func (h *Handler) Login(ctx *gin.Context) {
 	if err != nil {
 		code = http.StatusBadRequest
 		message = errors.ErrBadRequest.Error()
-		return
 	}
 
 	select {
@@ -150,12 +143,44 @@ func (h *Handler) Login(ctx *gin.Context) {
 	default:
 		message = "Success to login"
 		data = res
-		return
 	}
 }
 
 func (h *Handler) UpdateUser(ctx *gin.Context) {
+	c, cancel := context.WithTimeout(ctx.Request.Context(), 15*time.Second)
+	defer cancel()
 
+	var (
+		err     error
+		message string
+		code    = http.StatusOK
+		data    interface{}
+	)
+
+	defer func() {
+		if err != nil {
+			response.Error(ctx, code, err, message, data)
+			return
+		}
+		response.Success(ctx, code, message, data)
+	}()
+
+	req := entity.UserUpdate{}
+	if err = ctx.ShouldBindJSON(&req); err != nil {
+		message = errors.ErrInvalidRequest.Error()
+		code = http.StatusBadRequest
+		return
+	}
+
+	select {
+	case <-c.Done():
+		message = errors.ErrRequestTimeout.Error()
+		code = http.StatusRequestTimeout
+		return
+	default:
+		message = "Success to login"
+		data = nil
+	}
 }
 
 func (h *Handler) UploadPhotoProfile(ctx *gin.Context) {
