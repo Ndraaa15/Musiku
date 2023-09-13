@@ -26,12 +26,16 @@ func ValidateJWTToken() gin.HandlerFunc {
 		tokenString := tokenParts[1]
 
 		claims, err := jwt.DecodeToken(tokenString)
-
 		if err != nil {
 			ctx.AbortWithError(http.StatusUnauthorized, err)
+			return
 		}
 
-		userID := claims["id"].(string)
+		userID, ok := claims["id"].(string)
+		if !ok {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+			return
+		}
 
 		ctx.Set("user", userID)
 		ctx.Next()

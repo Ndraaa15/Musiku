@@ -15,8 +15,8 @@ type User struct {
 	Phone    string    `json:"phone" gorm:"type:varchar(13)"`
 	Photo    string    `json:"photo"`
 	Status   bool      `json:"status" gorm:"default:false"`
-	CreateAt time.Time `json:"create_at" gorm:"autoCreateTime"`
-	UpdateAt time.Time `json:"update_at" gorm:"autoUpdateTime"`
+	CreateAt time.Time `json:"-" gorm:"autoCreateTime"`
+	UpdateAt time.Time `json:"-" gorm:"autoUpdateTime"`
 }
 
 type UserLogin struct {
@@ -39,8 +39,8 @@ type ResponseLogin struct {
 
 type UserUpdate struct {
 	Name     string `json:"name"`
-	Username string `json:"username" gorm:"unique"`
-	Email    string `json:"email" gorm:"unique"`
-	Password string `db:"password" json:"-"`
-	Phone    string `json:"phone" gorm:"type:varchar(13)"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	Phone    string `json:"phone"`
 }

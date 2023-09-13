@@ -1,16 +1,20 @@
 package validator
 
 import (
+	"net/mail"
 	"regexp"
 )
 
 func ValidateEmail(mailAddress string) bool {
-	emailPattern := `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$`
-	_, err := regexp.MatchString(emailPattern, mailAddress)
+	_, err := mail.ParseAddress(mailAddress)
 	return err == nil
 }
 
 func ValidatePassword(password string) bool {
+	if len(password) < 8 {
+		return false
+	}
+
 	passwordPattern := `^[A-Za-z\d]{8,}$`
 	_, err := regexp.MatchString(passwordPattern, password)
 	return err == nil

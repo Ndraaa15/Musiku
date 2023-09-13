@@ -133,13 +133,13 @@ func (h *Handler) Login(ctx *gin.Context) {
 	if err != nil {
 		code = http.StatusBadRequest
 		message = errors.ErrBadRequest.Error()
+		return
 	}
 
 	select {
 	case <-c.Done():
 		message = errors.ErrRequestTimeout.Error()
 		code = http.StatusRequestTimeout
-		return
 	default:
 		message = "Success to login"
 		data = res
@@ -165,10 +165,24 @@ func (h *Handler) UpdateUser(ctx *gin.Context) {
 		response.Success(ctx, code, message, data)
 	}()
 
+	id, err := uuid.FromString(ctx.MustGet("user").(string))
+	if err != nil {
+		message = errors.ErrInvalidRequest.Error()
+		code = http.StatusBadRequest
+		return
+	}
+
 	req := entity.UserUpdate{}
 	if err = ctx.ShouldBindJSON(&req); err != nil {
 		message = errors.ErrInvalidRequest.Error()
 		code = http.StatusBadRequest
+		return
+	}
+
+	res, err := h.User.UpdateUser(&req, c, id)
+	if err != nil {
+		code = http.StatusInternalServerError
+		message = errors.ErrInternalServer.Error()
 		return
 	}
 
@@ -178,11 +192,57 @@ func (h *Handler) UpdateUser(ctx *gin.Context) {
 		code = http.StatusRequestTimeout
 		return
 	default:
-		message = "Success to login"
-		data = nil
+		message = "Success to update user"
+		data = res
 	}
 }
 
 func (h *Handler) UploadPhotoProfile(ctx *gin.Context) {
+	c, cancel := context.WithTimeout(ctx.Request.Context(), 15*time.Second)
+	defer cancel()
 
+	var (
+		err     error
+		message string
+		code    = http.StatusOK
+		data    interface{}
+	)
+
+	defer func() {
+		if err != nil {
+			response.Error(ctx, code, err, message, data)
+			return
+		}
+		response.Success(ctx, code, message, data)
+	}()
+
+	id, err := uuid.FromString(ctx.MustGet("user").(string))
+	if err != nil {
+		message = errors.ErrInvalidRequest.Error()
+		code = http.StatusBadRequest
+		return
+	}
+
+	photoProfile, err := ctx.FormFile("photo-profile")
+	if err != nil {
+		message = errors.ErrInvalidRequest.Error()
+		code = http.StatusBadRequest
+		return
+	}
+
+	res, err := h.User.UploadPhoto(photoProfile, id, c)
+	if err != nil {
+		code = http.StatusInternalServerError
+		message = errors.ErrInternalServer.Error()
+		return
+	}
+
+	select {
+	case <-c.Done():
+		message = errors.ErrRequestTimeout.Error()
+		code = http.StatusRequestTimeout
+	default:
+		message = "Success to upload photo profile"
+		data = res
+	}
 }
