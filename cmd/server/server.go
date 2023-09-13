@@ -119,7 +119,11 @@ func Run() int {
 	}
 
 	s.Start()
-	s.router.Run(fmt.Sprintf(":%s", os.Getenv("CONFIG_SERVER_PORT")))
+
+	if err := http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv("CONFIG_SERVER_PORT")), s.router); err != nil {
+		return ErrInternalServer
+	}
+
 	return CodeSuccess
 }
 
@@ -127,26 +131,41 @@ func (s *server) Start() {
 	log.Printf("[musiku-server] Server is running at %s:%s", os.Getenv("CONFIG_SERVER_HOST"), os.Getenv("CONFIG_SERVER_PORT"))
 	log.Println("[musiku-server] starting server...")
 
+	s.router.Use(middleware.CORS())
+
 	s.router.GET("/health", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{"message": "hi, i'm musiku server"})
 	})
 
 	route := s.router.Group("/api/v1")
 
-	route.POST("/register", s.handler.Register)
-	route.POST("/login", s.handler.Login)
-	route.GET("/verify/:id", s.handler.VerifyAccount)
+	user := route.Group("/user")
+	user.POST("/register", s.handler.Register)
+	user.POST("/login", s.handler.Login)
+	user.PATCH("/verify/:id", s.handler.VerifyAccount)
 
-	route.GET("/venue", s.handler.GetAllVenue)
-	route.GET("/venue/:id", s.handler.GetVenueByID)
-	route.PATCH("/venue/:id", s.handler.RentVenue)
+	user.Use(middleware.ValidateJWTToken())
+	user.PATCH("/update", s.handler.UpdateUser)
+	user.PATCH("/photo-profile", s.handler.UploadPhotoProfile)
 
-	route.GET("/instruments", s.handler.GetAllInstrument)
-	route.GET("/instruments/:id", s.handler.GetInstrumentByID)
-	route.PATCH("/instruments/:id", s.handler.RentInstrument)
-	route.GET("/rent/instrument/province", s.handler.GetProvince)
-	route.GET("/rent/instrument/city", s.handler.GetCity)
-	route.GET("/rent/instrument/cost", s.handler.GetCost)
+	venue := route.Group("/venue")
+	venue.Use(middleware.ValidateJWTToken())
+	venue.GET("", s.handler.GetAllVenue)
+	venue.GET("/:id", s.handler.GetVenueByID)
+	venue.PATCH("/:id", s.handler.RentVenue)
 
-	route.Use(middleware.ValidateJWTToken())
+	instrument := route.Group("/instrument")
+	instrument.Use(middleware.ValidateJWTToken())
+	instrument.GET("", s.handler.GetAllInstrument)
+	instrument.GET("/:id", s.handler.GetInstrumentByID)
+	instrument.PATCH("/:id", s.handler.RentInstrument)
+	instrument.GET("/rent/:id-instrument/province", s.handler.GetProvince)
+	instrument.GET("/rent/:id-instrument/city", s.handler.GetCity)
+	instrument.GET("/rent/:id-instrument/cost", s.handler.GetCost)
+
+	studio := route.Group("/studio")
+	studio.Use(middleware.ValidateJWTToken())
+	studio.GET("", s.handler.GetAllStudio)
+	studio.GET("/:id", s.handler.GetStudioByID)
+	studio.PATCH("/:id", s.handler.RentStudio)
 }

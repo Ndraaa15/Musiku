@@ -47,7 +47,7 @@ func (g *Gomail) SetSubject(subject string) {
 
 func (g *Gomail) SetBodyHTML(username, verificationLink string) error {
 	var body bytes.Buffer
-	path := "C:/Users/indra/Documents/Lomba/APPS DEVELOPMENT - IITC 2023/musiku/global/email/template.html"
+	path := "template.html"
 	fmt.Println(os.Stat(path))
 	t, err := template.ParseFiles(path)
 	if err != nil {
