@@ -8,7 +8,9 @@ import (
 
 	"github.com/Ndraaa15/musiku/global/errors"
 	"github.com/Ndraaa15/musiku/global/response"
+	"github.com/Ndraaa15/musiku/internal/domain/entity"
 	"github.com/gin-gonic/gin"
+	"github.com/gofrs/uuid"
 )
 
 func (h *Handler) GetAllInstrument(ctx *gin.Context) {
@@ -110,15 +112,41 @@ func (h *Handler) RentInstrument(ctx *gin.Context) {
 		response.Success(ctx, code, message, data)
 	}()
 
+	idUser, err := uuid.FromString(ctx.MustGet("user").(string))
+	if err != nil {
+		message = errors.ErrInvalidRequest.Error()
+		code = http.StatusBadRequest
+		return
+	}
+
+	req := entity.RentInstrument{}
+	if err = ctx.ShouldBindJSON(&req); err != nil {
+		message = errors.ErrInvalidRequest.Error()
+		code = http.StatusBadRequest
+		return
+	}
+
+	idInstrument, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		message = errors.ErrInvalidRequest.Error()
+		code = http.StatusBadRequest
+		return
+	}
+
+	res, err := h.Instrument.RentInstrument(c, uint(idInstrument), &req, idUser)
+	if err != nil {
+		message = errors.ErrInternalServer.Error()
+		code = http.StatusInternalServerError
+		return
+	}
+
 	select {
 	case <-c.Done():
 		code = http.StatusRequestTimeout
 		message = errors.ErrRequestTimeout.Error()
-		return
 	default:
 		message = "Success to get instrument"
-		data = nil
-		return
+		data = res
 	}
 }
 
@@ -216,11 +244,21 @@ func (h *Handler) GetCost(ctx *gin.Context) {
 		response.Success(ctx, code, message, data)
 	}()
 
-	origin := ctx.Query("origin") //city id
-	weight := ctx.Query("weight")
-	courier := ctx.Query("courier")
+	id, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		message = errors.ErrInvalidRequest.Error()
+		code = http.StatusBadRequest
+		return
+	}
 
-	res, err := h.Instrument.GetCost(c, origin, weight, courier)
+	req := entity.ShippingCost{}
+	if err = ctx.ShouldBindJSON(&req); err != nil {
+		message = errors.ErrInvalidRequest.Error()
+		code = http.StatusBadRequest
+		return
+	}
+
+	res, err := h.Instrument.GetCost(c, uint(id), &req)
 	if err != nil {
 		code = http.StatusBadRequest
 		message = errors.ErrBadRequest.Error()

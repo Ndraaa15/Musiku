@@ -2,27 +2,48 @@ package entity
 
 import (
 	"time"
+
+	"github.com/gofrs/uuid"
 )
 
 type Instrument struct {
 	ID            uint      `json:"id" gorm:"autoIncreament;primaryKey"`
 	Name          string    `json:"name"`
-	RentPrice     float64   `json:"rent_price"`
-	Address       string    `json:"address"`
+	Owner         string    `json:"owner"`
+	ShortDesc     string    `json:"short_desc"`
 	Description   string    `json:"description"`
+	RentPrice     float64   `json:"rent_price"`
+	District      string    `json:"district"`
+	City          string    `json:"city"`
+	Province      string    `json:"province"`
+	Street        string    `json:"street"`
 	Spesification string    `json:"spesification"`
-	Status        bool      `json:"status"`
-	CreateAt      time.Time `json:"create_at" gorm:"autoCreateTime"`
-	UpdateAt      time.Time `json:"update_at" gorm:"autoUpdateTime"`
+	OwnerNumber   string    `json:"owner_number"`
+	Weight        int       `json:"weight"`
+	IsBooked      bool      `json:"is_booked"`
+	Photo         string    `json:"photo"`
+	CreateAt      time.Time `json:"-" gorm:"autoCreateTime"`
+	UpdateAt      time.Time `json:"-" gorm:"autoUpdateTime"`
 }
 
 type RentInstrument struct {
-	ID             uint    `json:"id" gorm:"autoIncreament;primaryKey"`
-	InstrumentID   uint    `json:"instrument_id"`
-	LengthLoan     uint    `json:"length_loan"`
-	UserID         uint    `json:"user_id"`
-	Cost           float64 `json:"cost"`
-	TotalCost      float64 `json:"total_cost"`
-	DayRent        string  `json:"day_rent"`
-	EstimationTime string  `json:"estimation_time"`
+	ID             uint       `json:"id" gorm:"autoIncreament;primaryKey"`
+	UserID         uuid.UUID  `json:"user_id" gorm:"type:char(36)"`
+	InstrumentID   uint       `json:"-"`
+	Instrument     Instrument `json:"-" gorm:"foreignKey:InstrumentID"`
+	StartDate      string     `json:"start_date"`
+	LengthLoan     uint       `json:"length_loan" binding:"required"`
+	Courier        string     `json:"courier" binding:"required"`
+	RentCost       float64    `json:"rent_cost" binding:"required"`
+	ShippingCost   float64    `json:"shipping_cost" binding:"required"`
+	ServiceCost    float64    `json:"service_cost" binding:"required"`
+	TotalCost      float64    `json:"total_cost"`
+	EstimationTime string     `json:"estimation_time" binding:"required"`
+	Status         string     `json:"status" gorm:"default:'PENDING'"`
+	Note           string     `json:"note"`
+}
+
+type ShippingCost struct {
+	ProvinceDestination string `json:"province_destination"`
+	CityDestination     string `json:"city_destination"`
 }

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"mime/multipart"
 	"os"
 
@@ -79,7 +80,7 @@ func sendEmail(req *entity.UserRegister, uuid uuid.UUID) error {
 	mailer.SetSubject("Email Verification")
 	mailer.SetReciever(req.Email)
 	mailer.SetSender(os.Getenv("CONFIG_SENDER_NAME"))
-	mailer.SetBodyHTML(req.Username, os.Getenv("URL_VERIFY")+uuid.String())
+	mailer.SetBodyHTML(req.Username, fmt.Sprintf("%s/%s", os.Getenv("URL_VERIFY"), uuid.String()))
 	if err := mailer.SendMail(); err != nil {
 		return err
 	}
@@ -214,5 +215,24 @@ func validateRequestUpdate(req *entity.UserUpdate, user *entity.User) (*entity.U
 		user.Password = hashedPassword
 	}
 
+	if req.City != "" {
+		user.City = req.City
+	}
+
+	if req.Province != "" {
+		user.Province = req.Province
+	}
+
+	if req.Street != "" {
+		user.Street = req.Street
+	}
+	return user, nil
+}
+
+func (us *UserService) Profile(ctx context.Context, id uuid.UUID) (*entity.User, error) {
+	user, err := us.Repository.FindByID(id, ctx)
+	if err != nil {
+		return nil, err
+	}
 	return user, nil
 }
