@@ -138,6 +138,8 @@ func (s *server) Start() {
 	})
 
 	route := s.router.Group("/api/v1")
+	route.GET("/province", s.handler.GetProvince)
+	route.GET("/city", s.handler.GetCity)
 
 	user := route.Group("/user")
 	user.POST("/register", s.handler.Register)
@@ -145,6 +147,7 @@ func (s *server) Start() {
 	user.PATCH("/verify/:id", s.handler.VerifyAccount)
 
 	user.Use(middleware.ValidateJWTToken())
+	user.GET("/profile", s.handler.Profile)
 	user.PATCH("/update", s.handler.UpdateUser)
 	user.PATCH("/photo-profile", s.handler.UploadPhotoProfile)
 
@@ -154,14 +157,12 @@ func (s *server) Start() {
 	venue.GET("/:id", s.handler.GetVenueByID)
 	venue.PATCH("/:id", s.handler.RentVenue)
 
-	instrument := route.Group("/instrument")
+	instrument := route.Group("/instruments")
 	instrument.Use(middleware.ValidateJWTToken())
 	instrument.GET("", s.handler.GetAllInstrument)
 	instrument.GET("/:id", s.handler.GetInstrumentByID)
-	instrument.PATCH("/:id", s.handler.RentInstrument)
-	instrument.GET("/rent/:id-instrument/province", s.handler.GetProvince)
-	instrument.GET("/rent/:id-instrument/city", s.handler.GetCity)
-	instrument.GET("/rent/:id-instrument/cost", s.handler.GetCost)
+	instrument.PATCH("/rent/:id", s.handler.RentInstrument)
+	instrument.GET("/rent/:id/cost", s.handler.GetCost)
 
 	studio := route.Group("/studio")
 	studio.Use(middleware.ValidateJWTToken())

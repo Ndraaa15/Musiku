@@ -11,6 +11,7 @@ func Migration(db *DB) error {
 	if err := db.AutoMigrate(
 		&entity.User{},
 		&entity.Instrument{},
+		&entity.RentInstrument{},
 		&entity.Studio{},
 		&entity.Venue{},
 		&entity.VenueDay{},

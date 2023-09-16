@@ -4,9 +4,12 @@ import (
 	"context"
 	"os"
 
+	"github.com/Ndraaa15/musiku/global/errors"
+	"github.com/Ndraaa15/musiku/global/time"
 	"github.com/Ndraaa15/musiku/internal/domain/entity"
 	"github.com/Ndraaa15/musiku/internal/domain/repository"
 	"github.com/Ndraaa15/musiku/internal/infrastructure/rajaongkir"
+	"github.com/gofrs/uuid"
 )
 
 type InstrumentService struct {
@@ -35,15 +38,46 @@ func (is *InstrumentService) GetByID(ctx context.Context, id uint) (*entity.Inst
 	return instrument, nil
 }
 
-func (is *InstrumentService) RentInstrument(ctx context.Context, id uint) (*entity.Instrument, error) {
-	instrument, err := is.InstrumentRepository.Update(ctx, &entity.Instrument{}, id)
+func (is *InstrumentService) RentInstrument(ctx context.Context, id uint, req *entity.RentInstrument, idUser uuid.UUID) (*entity.RentInstrument, error) {
+	instrument, err := is.InstrumentRepository.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	return instrument, nil
+
+	if instrument.IsBooked {
+		return nil, errors.ErrInstrumentIsBooked
+	}
+
+	totalCost := req.RentCost + req.ShippingCost + req.ServiceCost
+
+	rentInstrument := &entity.RentInstrument{
+		UserID:         idUser,
+		InstrumentID:   id,
+		Courier:        req.Courier,
+		StartDate:      time.GenerateDate(),
+		LengthLoan:     req.LengthLoan,
+		RentCost:       req.RentCost,
+		ShippingCost:   req.ShippingCost,
+		ServiceCost:    req.ServiceCost,
+		TotalCost:      totalCost,
+		EstimationTime: req.EstimationTime,
+		Note:           req.Note,
+	}
+
+	res, err := is.InstrumentRepository.CreateRentInstrument(ctx, rentInstrument)
+	if err != nil {
+		return nil, err
+	}
+
+	instrument.IsBooked = true
+	_, err = is.InstrumentRepository.Update(ctx, instrument, id)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
-func (is *InstrumentService) GetProvince(ctx context.Context, idProvince string) (interface{}, error) {
+func (is *InstrumentService) GetProvince(ctx context.Context, idProvince string) (*rajaongkir.RajaOngkirResponseProvince, error) {
 	rajaOngkir := rajaongkir.InitRajaOngkit(os.Getenv("RAJAONGKIR_CREDENTIAL"))
 	province, err := rajaOngkir.GetProvince(idProvince)
 	if err != nil {
@@ -52,7 +86,7 @@ func (is *InstrumentService) GetProvince(ctx context.Context, idProvince string)
 	return province, nil
 }
 
-func (is *InstrumentService) GetCity(ctx context.Context, idProvince, idCity string) (interface{}, error) {
+func (is *InstrumentService) GetCity(ctx context.Context, idProvince, idCity string) (*rajaongkir.RajaOngkirResponseCity, error) {
 	rajaOngkir := rajaongkir.InitRajaOngkit(os.Getenv("RAJAONGKIR_CREDENTIAL"))
 	city, err := rajaOngkir.GetCity(idCity, idProvince)
 	if err != nil {
@@ -61,14 +95,64 @@ func (is *InstrumentService) GetCity(ctx context.Context, idProvince, idCity str
 	return city, nil
 }
 
-func (is *InstrumentService) GetCost(ctx context.Context, cityOrigin, weight, courier string) (interface{}, error) {
-	// need to get the weight first based on the id of the instrument
-	// so we just need the city id and courier choose
+func (is *InstrumentService) GetCost(ctx context.Context, id uint, req *entity.ShippingCost) ([]*rajaongkir.RajaOngkirResponseCost, error) {
+	if req.CityDestination == "" || req.ProvinceDestination == "" {
+		return nil, errors.ErrBadRequest
+	}
 
-	rajaOngkir := rajaongkir.InitRajaOngkit(os.Getenv("RAJAONGKIR_CREDENTIAL"))
-	cost, err := rajaOngkir.GetCost(cityOrigin, "114", weight, courier)
+	instrument, err := is.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
+
+	rajaOngkir := rajaongkir.InitRajaOngkit(os.Getenv("RAJAONGKIR_CREDENTIAL"))
+
+	province, err := rajaOngkir.GetProvince("")
+	if err != nil {
+		return nil, err
+	}
+
+	idProvinceOrigin := findProvinceID(instrument.Province, province)
+
+	cityOrigin, err := rajaOngkir.GetCity(idProvinceOrigin, "")
+	if err != nil {
+		return nil, err
+	}
+	idCityOrigin := findCityID(instrument.City, cityOrigin)
+
+	idProvinceDestination := findProvinceID(req.ProvinceDestination, province)
+	cityDestination, err := rajaOngkir.GetCity(idProvinceDestination, "")
+	if err != nil {
+		return nil, err
+	}
+	idCityDestination := findCityID(req.CityDestination, cityDestination)
+
+	cost, err := rajaOngkir.GetCost(idCityOrigin, idCityDestination, instrument.Weight)
+	if err != nil {
+		return nil, err
+	}
+
 	return cost, nil
+}
+
+func findCityID(city string, response *rajaongkir.RajaOngkirResponseCity) string {
+	var targetID string
+	for _, result := range response.RajaOngkir.Results {
+		if result.CityName == city {
+			targetID = result.CityID
+			break
+		}
+	}
+	return targetID
+}
+
+func findProvinceID(province string, response *rajaongkir.RajaOngkirResponseProvince) string {
+	var targetID string
+	for _, result := range response.RajaOngkir.Results {
+		if result.Province == province {
+			targetID = result.ProvinceID
+			break
+		}
+	}
+	return targetID
 }
