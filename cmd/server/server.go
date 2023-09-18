@@ -116,19 +116,19 @@ func New() (*server, error) {
 		}
 	}
 
-	// {
-	// 	var totalStudio int64
-	// 	if err := db.Model(&entity.Studio{}).Count(&totalStudio).Error; err != nil {
-	// 		log.Printf("[musiku-server] failed to count total venue : %v\n", err)
-	// 		return nil, err
-	// 	}
-	// 	if totalStudio == 0 {
-	// 		if err := repository.SeedStudio(db); err != nil {
-	// 			log.Printf("[musiku-server] failed to seed venue : %v\n", err)
-	// 			return nil, err
-	// 		}
-	// 	}
-	// }
+	{
+		var totalStudio int64
+		if err := db.Model(&entity.Studio{}).Count(&totalStudio).Error; err != nil {
+			log.Printf("[musiku-server] failed to count total venue : %v\n", err)
+			return nil, err
+		}
+		if totalStudio == 0 {
+			if err := repository.SeedStudio(db); err != nil {
+				log.Printf("[musiku-server] failed to seed venue : %v\n", err)
+				return nil, err
+			}
+		}
+	}
 
 	studioRepository := repository.NewStudioRepository(db)
 	studioService := service.NewStudioService(studioRepository)
