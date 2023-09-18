@@ -101,6 +101,35 @@ func New() (*server, error) {
 	instrumentRepository := repository.NewInstrumentRepository(db)
 	instrumentService := service.NewInstrumentService(instrumentRepository)
 
+	{
+		var totalTimes int64
+		if err := db.Model(&entity.Time{}).Count(&totalTimes).Error; err != nil {
+			log.Printf("[musiku-server] failed to count total days : %v\n", err)
+			return nil, err
+		}
+
+		if totalTimes == 0 {
+			if err := repository.SeedTime(db); err != nil {
+				log.Printf("[musiku-server] failed to seed days : %v\n", err)
+				return nil, err
+			}
+		}
+	}
+
+	// {
+	// 	var totalStudio int64
+	// 	if err := db.Model(&entity.Studio{}).Count(&totalStudio).Error; err != nil {
+	// 		log.Printf("[musiku-server] failed to count total venue : %v\n", err)
+	// 		return nil, err
+	// 	}
+	// 	if totalStudio == 0 {
+	// 		if err := repository.SeedStudio(db); err != nil {
+	// 			log.Printf("[musiku-server] failed to seed venue : %v\n", err)
+	// 			return nil, err
+	// 		}
+	// 	}
+	// }
+
 	studioRepository := repository.NewStudioRepository(db)
 	studioService := service.NewStudioService(studioRepository)
 
@@ -155,7 +184,7 @@ func (s *server) Start() {
 	venue.Use(middleware.ValidateJWTToken())
 	venue.GET("", s.handler.GetAllVenue)
 	venue.GET("/:id", s.handler.GetVenueByID)
-	venue.PATCH("/:id", s.handler.RentVenue)
+	venue.PATCH("/:venueday_id", s.handler.RentVenue)
 
 	instrument := route.Group("/instruments")
 	instrument.Use(middleware.ValidateJWTToken())

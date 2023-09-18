@@ -11,9 +11,11 @@ type Venue struct {
 	Name        string     `json:"name"`
 	Address     string     `json:"username"`
 	Description string     `json:"description"`
+	Photo       string     `json:"photo"`
+	Phone       string     `json:"phone"`
 	VenueDays   []VenueDay `json:"venue_days" gorm:"foreignKey:VenueID"`
-	CreateAt    time.Time  `json:"create_at" gorm:"autoCreateTime"`
-	UpdateAt    time.Time  `json:"update_at" gorm:"autoUpdateTime"`
+	CreateAt    time.Time  `json:"-" gorm:"autoCreateTime"`
+	UpdateAt    time.Time  `json:"-" gorm:"autoUpdateTime"`
 }
 
 type VenueDay struct {
@@ -24,11 +26,12 @@ type VenueDay struct {
 	Salary    float64 `json:"salary"`
 	StartTime string  `json:"start_time"`
 	EndTime   string  `json:"end_time"`
-	Status    string  `json:"status" sql:"type:ENUM('PENDING', 'BOOKED', 'AVAILABLE')" gorm:"default:'AVAILABLE'"`
+	Status    string  `json:"status" sql:"type:ENUM('BOOKED', 'AVAILABLE')" gorm:"default:'AVAILABLE'"`
 }
 type ApplyVenue struct {
-	ID         uint      `json:"id" gorm:"primaryKey"`
-	UserID     uuid.UUID `json:"user_id"`
-	VenueDayID uint      `json:"-"`
-	VenueDay   VenueDay  `json:"venue_day" gorm:"foreignKey:VenueDayID"`
+	ID          uint      `json:"id" gorm:"primaryKey"`
+	UserID      uuid.UUID `json:"user_id"`
+	VenueDayID  uint      `json:"venue_day_id"`
+	VenueDay    VenueDay  `json:"venue_day" gorm:"foreignKey:VenueDayID"`
+	StatusApply string    `json:"status_apply" sql:"type:ENUM('WAITING', 'APPROVED', 'REJECTED')" gorm:"default:'WAITING'"`
 }

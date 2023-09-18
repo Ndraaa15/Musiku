@@ -34,13 +34,19 @@ func (vs *VenueService) GetVenueByID(ctx context.Context, id uint) (*entity.Venu
 }
 
 func (vs *VenueService) RentVenue(ctx context.Context, userID uuid.UUID, venueDayID uint) (*entity.ApplyVenue, error) {
-	if err := vs.VenueRepository.UpdateStatusVenueDay(ctx, "PENDING", venueDayID); err != nil {
+	venueDay, err := vs.VenueRepository.GetVenueDayByID(ctx, venueDayID)
+	if err != nil {
+		return nil, err
+	}
+
+	if venueDay.Status == "BOOKED" {
 		return nil, err
 	}
 
 	applyVenue := entity.ApplyVenue{
 		UserID:     userID,
 		VenueDayID: venueDayID,
+		VenueDay:   *venueDay,
 	}
 
 	res, err := vs.VenueRepository.CreateApplyVenue(ctx, &applyVenue)
