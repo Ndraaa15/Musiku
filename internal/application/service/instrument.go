@@ -48,7 +48,7 @@ func (is *InstrumentService) RentInstrument(ctx context.Context, id uint, req *e
 		return nil, errors.ErrInstrumentIsBooked
 	}
 
-	totalCost := req.RentCost + req.ShippingCost + req.ServiceCost
+	totalCost := (req.RentCost * float64(req.LengthLoan)) + req.ShippingCost + req.ServiceCost
 
 	rentInstrument := &entity.RentInstrument{
 		UserID:         idUser,

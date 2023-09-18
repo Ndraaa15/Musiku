@@ -110,9 +110,14 @@ func (h *Handler) RentVenue(ctx *gin.Context) {
 		response.Success(ctx, code, message, data)
 	}()
 
-	userID := ctx.MustGet("userID").(uuid.UUID)
+	userID, err := uuid.FromString(ctx.MustGet("user").(string))
+	if err != nil {
+		message = errors.ErrInvalidRequest.Error()
+		code = http.StatusBadRequest
+		return
+	}
 
-	venueDayID, err := strconv.Atoi(ctx.Param("id"))
+	venueDayID, err := strconv.Atoi(ctx.Param("venueday_id"))
 	if err != nil {
 		code = http.StatusBadRequest
 		message = errors.ErrInvalidRequest.Error()
@@ -130,7 +135,6 @@ func (h *Handler) RentVenue(ctx *gin.Context) {
 	case <-c.Done():
 		code = http.StatusRequestTimeout
 		message = errors.ErrRequestTimeout.Error()
-		return
 	default:
 		message = "Success to rent venue"
 		data = res
